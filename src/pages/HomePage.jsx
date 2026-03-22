@@ -405,8 +405,7 @@ const HomePage = () => {
                 Obras Realizadas
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Veja alguns projetos executados pela Marmoraria Nível. Essa área pode ser
-                atualizada com novas fotos pelo cliente.
+                Veja alguns projetos executados pela Marmoraria Nível.
               </p>
             </div>
 

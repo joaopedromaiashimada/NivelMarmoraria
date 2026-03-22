@@ -75,66 +75,6 @@ const HomePage = () => {
     '✓ Pontualidade na entrega',
   ];
 
-  const defaultPortfolioImages = [
-    {
-      url: 'https://images.unsplash.com/photo-1608635661512-52c656e0d4e5',
-      title: 'Bancada de cozinha em Mármore Branco Carrara',
-      description:
-        'Acabamento polido com ilha central, proporcionando amplitude e sofisticação ao ambiente gourmet.',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1464175168058-76accb30f22b',
-      title: 'Cozinha com Granito Preto Absoluto',
-      description:
-        'Bancada em L com acabamento reto, garantindo durabilidade extrema e visual contemporâneo.',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1432303469531-1f834b81f1aa',
-      title: 'Banheiro em Mármore Travertino',
-      description:
-        'Bancada com cuba esculpida e revestimento de parede, criando um ambiente acolhedor e luxuoso.',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1663811396038-7a21d4eef49e',
-      title: 'Lavatório em Quartzo Branco',
-      description:
-        'Design minimalista com saia alta e acabamento meia esquadria perfeito.',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1550133587-44f6b14bd5e9',
-      title: 'Escada em Granito São Gabriel',
-      description:
-        'Revestimento completo de degraus e espelhos com acabamento antiderrapante e rodapé embutido.',
-    },
-  ];
-
-  const defaultCatalogItems = [
-    {
-      image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80',
-      title: 'Granito Preto São Gabriel',
-      description:
-        'Pedra versátil, elegante e muito usada em cozinhas, bancadas e áreas gourmet.',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&q=80',
-      title: 'Mármore Branco Carrara',
-      description:
-        'Visual sofisticado com veios suaves, ideal para ambientes refinados e modernos.',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-      title: 'Quartzo Branco',
-      description:
-        'Acabamento uniforme, baixa porosidade e excelente desempenho para áreas internas.',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
-      title: 'Mármore Travertino',
-      description:
-        'Material clássico com textura marcante, ótimo para banheiros e projetos sofisticados.',
-    },
-  ];
-
   const testimonials = [
     {
       name: 'Flávia Vicentini',
@@ -162,8 +102,8 @@ const HomePage = () => {
     },
   ];
 
-  const [portfolioImages, setPortfolioImages] = useState(defaultPortfolioImages);
-  const [catalogItems, setCatalogItems] = useState(defaultCatalogItems);
+  const [portfolioImages, setPortfolioImages] = useState([]);
+  const [catalogItems, setCatalogItems] = useState([]);
   const [catalogIndex, setCatalogIndex] = useState(0);
 
   useEffect(() => {
@@ -175,21 +115,20 @@ const HomePage = () => {
 
       if (error) {
         console.error('Erro ao buscar obras:', error);
-        setPortfolioImages(defaultPortfolioImages);
+        setPortfolioImages([]);
         return;
       }
 
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted = data.map((item) => ({
+      const formatted = (data || [])
+        .filter((item) => item.image_url)
+        .map((item) => ({
           id: item.id,
           url: item.image_url,
-          title: item.title,
-          description: item.description,
+          title: item.title || 'Obra realizada',
+          description: item.description || 'Projeto adicionado pelo cliente.',
         }));
-        setPortfolioImages(formatted);
-      } else {
-        setPortfolioImages(defaultPortfolioImages);
-      }
+
+      setPortfolioImages(formatted);
     };
 
     fetchObras();
@@ -204,21 +143,20 @@ const HomePage = () => {
 
       if (error) {
         console.error('Erro ao buscar catálogo:', error);
-        setCatalogItems(defaultCatalogItems);
+        setCatalogItems([]);
         return;
       }
 
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted = data.map((item) => ({
+      const formatted = (data || [])
+        .filter((item) => item.image_url)
+        .map((item) => ({
           id: item.id,
           image: item.image_url,
-          title: item.title,
-          description: item.description,
+          title: item.title || 'Material do catálogo',
+          description: item.description || 'Item adicionado no catálogo pelo cliente.',
         }));
-        setCatalogItems(formatted);
-      } else {
-        setCatalogItems(defaultCatalogItems);
-      }
+
+      setCatalogItems(formatted);
     };
 
     fetchCatalogo();
@@ -409,17 +347,23 @@ const HomePage = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {portfolioImages.map((item, index) => (
-                <PortfolioCard
-                  key={item.id || index}
-                  image={item.url}
-                  title={item.title}
-                  description={item.description}
-                  index={index}
-                />
-              ))}
-            </div>
+            {portfolioImages.length === 0 ? (
+              <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
+                Nenhuma obra cadastrada ainda.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {portfolioImages.map((item, index) => (
+                  <PortfolioCard
+                    key={item.id || index}
+                    image={item.url}
+                    title={item.title}
+                    description={item.description}
+                    index={index}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -433,12 +377,12 @@ const HomePage = () => {
               </p>
             </div>
 
-            {visibleCatalogItems.length > 0 && (
+            {visibleCatalogItems.length > 0 ? (
               <div className="relative">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                   {visibleCatalogItems.map((item, index) => (
                     <motion.div
-                      key={`${item.title}-${catalogIndex}-${index}`}
+                      key={`${item.id || item.title}-${catalogIndex}-${index}`}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -502,6 +446,10 @@ const HomePage = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-white p-8 text-center text-muted-foreground border border-border">
+                Nenhum item de catálogo cadastrado ainda.
               </div>
             )}
 

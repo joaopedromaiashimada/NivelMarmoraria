@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Lock, LogOut, Trash2, Upload, ImagePlus, Gem } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { uploadImage } from '@/lib/storage';
 
 const STORAGE_KEY = 'nivel-obras-galeria';
 const CATALOG_STORAGE_KEY = 'nivel-catalogo-galeria';
@@ -9,6 +10,8 @@ const PASSWORD = 'nivel123';
 const AdminObrasPage = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [isUploadingObra, setIsUploadingObra] = useState(false);
+  const [isUploadingCatalog, setIsUploadingCatalog] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -47,60 +50,80 @@ const AdminObrasPage = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
+
     if (password === PASSWORD) {
       setAuthenticated(true);
       setPassword('');
       return;
     }
+
     alert('Senha incorreta.');
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      setIsUploadingObra(true);
+
+      const imageUrl = await uploadImage(file, 'Site-Images', 'clientes');
+
       const next = [
         ...images,
         {
           id: Date.now(),
-          url: String(reader.result),
+          url: imageUrl,
           title: title.trim() || 'Obra realizada',
           description: description.trim() || 'Projeto adicionado pelo cliente.',
         },
       ];
+
       persistImages(next);
       setTitle('');
       setDescription('');
       e.target.value = '';
-      alert('Foto adicionada com sucesso.');
-    };
-    reader.readAsDataURL(file);
+
+      alert('Foto enviada com sucesso.');
+    } catch (error) {
+      console.error('Erro ao enviar obra:', error);
+      alert('Erro ao enviar imagem da obra.');
+    } finally {
+      setIsUploadingObra(false);
+    }
   };
 
-  const handleCatalogFileChange = (e) => {
+  const handleCatalogFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      setIsUploadingCatalog(true);
+
+      const imageUrl = await uploadImage(file, 'Site-Images', 'itens');
+
       const next = [
         ...catalogItems,
         {
           id: Date.now(),
-          image: String(reader.result),
+          image: imageUrl,
           title: catalogTitle.trim() || 'Material do catálogo',
           description: catalogDescription.trim() || 'Item adicionado no catálogo pelo cliente.',
         },
       ];
+
       persistCatalog(next);
       setCatalogTitle('');
       setCatalogDescription('');
       e.target.value = '';
-      alert('Item do catálogo adicionado com sucesso.');
-    };
-    reader.readAsDataURL(file);
+
+      alert('Item do catálogo enviado com sucesso.');
+    } catch (error) {
+      console.error('Erro ao enviar catálogo:', error);
+      alert('Erro ao enviar item do catálogo.');
+    } finally {
+      setIsUploadingCatalog(false);
+    }
   };
 
   const handleDelete = (id) => {
@@ -120,7 +143,11 @@ const AdminObrasPage = () => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center mb-6">
             <Lock className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-bold text-center text-foreground mb-2">Área do cliente</h1>
+
+          <h1 className="text-3xl font-bold text-center text-foreground mb-2">
+            Área do cliente
+          </h1>
+
           <p className="text-center text-muted-foreground mb-8">
             Acesso restrito para envio e gerenciamento das fotos das obras e do catálogo.
           </p>
@@ -133,7 +160,11 @@ const AdminObrasPage = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             />
-            <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90 py-6 rounded-xl text-base">
+
+            <Button
+              type="submit"
+              className="w-full bg-primary text-white hover:bg-primary/90 py-6 rounded-xl text-base"
+            >
               Entrar
             </Button>
           </form>
@@ -148,8 +179,11 @@ const AdminObrasPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-3xl border border-border p-6 shadow-sm">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Gerenciar conteúdo do site</h1>
-            <p className="text-muted-foreground mt-2">Atualize as fotos das obras e adicione novos materiais no catálogo.</p>
+            <p className="text-muted-foreground mt-2">
+              Atualize as fotos das obras e adicione novos materiais no catálogo.
+            </p>
           </div>
+
           <Button
             variant="outline"
             onClick={() => setAuthenticated(false)}
@@ -167,7 +201,9 @@ const AdminObrasPage = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground">Adicionar nova obra</h2>
-              <p className="text-muted-foreground">Envie apenas a foto ou, se quiser, complete com título e descrição.</p>
+              <p className="text-muted-foreground">
+                Envie apenas a foto ou, se quiser, complete com título e descrição.
+              </p>
             </div>
           </div>
 
@@ -179,6 +215,7 @@ const AdminObrasPage = () => {
               onChange={(e) => setTitle(e.target.value)}
               className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             />
+
             <input
               type="text"
               placeholder="Descrição curta (opcional)"
@@ -190,14 +227,25 @@ const AdminObrasPage = () => {
 
           <label className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center cursor-pointer hover:bg-primary/10 transition-colors">
             <Upload className="w-8 h-8 text-primary" />
-            <span className="text-lg font-semibold text-foreground">Clique para escolher a foto</span>
-            <span className="text-sm text-muted-foreground">A imagem será adicionada à galeria pública automaticamente.</span>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            <span className="text-lg font-semibold text-foreground">
+              {isUploadingObra ? 'Enviando imagem...' : 'Clique para escolher a foto'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              A imagem será adicionada à galeria pública automaticamente.
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={isUploadingObra}
+            />
           </label>
         </section>
 
         <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
           <h2 className="text-2xl font-bold text-foreground mb-6">Fotos já enviadas</h2>
+
           {sortedImages.length === 0 ? (
             <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
               Nenhuma foto adicionada ainda.
@@ -205,11 +253,16 @@ const AdminObrasPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedImages.map((item) => (
-                <div key={item.id} className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm">
+                <div
+                  key={item.id}
+                  className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm"
+                >
                   <img src={item.url} alt={item.title} className="w-full h-64 object-cover" />
+
                   <div className="p-4">
                     <h3 className="font-bold text-foreground">{item.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+
                     <Button
                       variant="outline"
                       onClick={() => handleDelete(item.id)}
@@ -232,7 +285,9 @@ const AdminObrasPage = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground">Adicionar item no catálogo</h2>
-              <p className="text-muted-foreground">Cadastre a foto da pedra, o nome e uma descrição para aparecer no carrossel do catálogo.</p>
+              <p className="text-muted-foreground">
+                Cadastre a foto da pedra, o nome e uma descrição para aparecer no carrossel do catálogo.
+              </p>
             </div>
           </div>
 
@@ -244,6 +299,7 @@ const AdminObrasPage = () => {
               onChange={(e) => setCatalogTitle(e.target.value)}
               className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             />
+
             <input
               type="text"
               placeholder="Descrição curta do material"
@@ -255,14 +311,27 @@ const AdminObrasPage = () => {
 
           <label className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center cursor-pointer hover:bg-primary/10 transition-colors">
             <Upload className="w-8 h-8 text-primary" />
-            <span className="text-lg font-semibold text-foreground">Clique para escolher a foto da pedra</span>
-            <span className="text-sm text-muted-foreground">O item será adicionado automaticamente ao carrossel do catálogo.</span>
-            <input type="file" accept="image/*" onChange={handleCatalogFileChange} className="hidden" />
+            <span className="text-lg font-semibold text-foreground">
+              {isUploadingCatalog ? 'Enviando imagem...' : 'Clique para escolher a foto da pedra'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              O item será adicionado automaticamente ao carrossel do catálogo.
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCatalogFileChange}
+              className="hidden"
+              disabled={isUploadingCatalog}
+            />
           </label>
         </section>
 
         <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Itens já cadastrados no catálogo</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6">
+            Itens já cadastrados no catálogo
+          </h2>
+
           {sortedCatalogItems.length === 0 ? (
             <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
               Nenhum item do catálogo adicionado ainda.
@@ -270,11 +339,16 @@ const AdminObrasPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedCatalogItems.map((item) => (
-                <div key={item.id} className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm">
+                <div
+                  key={item.id}
+                  className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm"
+                >
                   <img src={item.image} alt={item.title} className="w-full h-64 object-cover" />
+
                   <div className="p-4">
                     <h3 className="font-bold text-foreground">{item.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+
                     <Button
                       variant="outline"
                       onClick={() => handleDeleteCatalog(item.id)}

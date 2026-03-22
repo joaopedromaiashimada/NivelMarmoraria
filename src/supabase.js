@@ -1,6 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://lwncavmdvloxxssbgyeu.supabase.co'
-const supabaseKey = 'sb_publishable_JElXPhMCuM4Iri728GZsVQ_UOLALXD0'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+if (!supabaseUrl) {
+  throw new Error('VITE_SUPABASE_URL não definida');
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('VITE_SUPABASE_ANON_KEY não definida');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

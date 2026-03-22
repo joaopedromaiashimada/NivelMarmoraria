@@ -1,23 +1,34 @@
 import { supabase } from '../supabase.js'
 
-export async function uploadImage(file) {
-  const fileName = `image-${Date.now()}`
+export async function uploadImage(file, bucket = 'obras') {
+  const safeFileName = file.name
+    ? file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-zA-Z0-9._-]/g, '')
+    : 'imagem';
+
+  const fileName = `image-${Date.now()}-${safeFileName}`;
 
   const { error } = await supabase
     .storage
-    .from('Site-Images')
-    .upload(fileName, file)
+    .from(bucket)
+    .upload(fileName, file);
 
   if (error) {
-    console.error(error)
-    alert('Erro ao enviar imagem')
-    return null
+    console.error(error);
+    alert('Erro ao enviar imagem');
+    return null;
   }
 
   const { data } = supabase
     .storage
-    .from('Site-Images')
-    .getPublicUrl(fileName)
+    .from(bucket)
+    .getPublicUrl(fileName);
 
-  return data.publicUrl
+  return {
+    image_url: data.publicUrl,
+    storage_path: fileName,
+  };
 }

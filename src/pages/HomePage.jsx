@@ -8,11 +8,10 @@ import {
   Layers,
   Sparkles,
   Star,
-  TrendingUp,
-  Users,
   ChevronRight,
   ChevronLeft,
   Gem,
+  ShieldCheck,
 } from 'lucide-react';
 import Header from '@/components/Header.jsx';
 import Footer from '@/components/Footer.jsx';
@@ -304,30 +303,41 @@ const HomePage = () => {
                 initial={{ opacity: 0, y: 25 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12"
+                className="mt-12"
               >
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
-                  <div className="flex items-center gap-3 mb-2">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                    <span className="text-white font-semibold">Acabamento premium</span>
-                  </div>
-                  <p className="text-white/75 text-sm">Projetos sob medida com alto padrão visual.</p>
-                </div>
+                <div className="inline-flex flex-col sm:flex-row sm:items-center gap-5 rounded-3xl border border-blue-300/25 bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-5 shadow-2xl shadow-blue-950/30 backdrop-blur-md">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 border border-white/20">
+                      <ShieldCheck className="w-8 h-8 text-white" />
+                    </div>
 
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Users className="w-5 h-5 text-white" />
-                    <span className="text-white font-semibold">Atendimento próximo</span>
-                  </div>
-                  <p className="text-white/75 text-sm">Orientação personalizada em cada etapa.</p>
-                </div>
+                    <div>
+                      <div className="flex items-end gap-2 leading-none">
+                        <span className="text-4xl font-extrabold text-white">4.9</span>
+                        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-100 mb-1">
+                          Google
+                        </span>
+                      </div>
 
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Star className="w-5 h-5 text-white fill-white" />
-                    <span className="text-white font-semibold">Clientes satisfeitos</span>
+                      <div className="flex items-center gap-1 text-yellow-300 mt-2">
+                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                        <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-white/75 text-sm">Qualidade reconhecida em Piracicaba e região.</p>
+
+                  <div className="hidden sm:block h-14 w-px bg-white/20"></div>
+
+                  <div>
+                    <p className="text-white font-bold text-lg">Excelência reconhecida pelos clientes</p>
+                    <p className="text-blue-100 text-sm leading-relaxed max-w-md">
+                      Atendimento de confiança, acabamento de alto padrão e satisfação comprovada em
+                      Piracicaba e região.
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             </div>

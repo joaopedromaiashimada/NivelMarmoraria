@@ -66,8 +66,7 @@ const Header = () => {
             }}
             className="flex items-center gap-2 text-left transition-opacity duration-200 hover:opacity-90 shrink-0"
           >
-            <img src={logoUrl} alt="Logo Marmoraria Nível" className="h-9 sm:h-10 w-auto object-contain" />
-            <span className="text-xl sm:text-[2rem] font-extrabold text-primary tracking-tight leading-none">
+<img src="/logo-nivel.png" alt="Logo Marmoraria Nível" className="h-9 sm:h-10 w-auto object-contain" />            <span className="text-xl sm:text-[2rem] font-extrabold text-primary tracking-tight leading-none">
               Marmoraria Nível
             </span>
           </button>

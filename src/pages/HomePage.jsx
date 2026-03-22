@@ -258,22 +258,23 @@ const HomePage = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 text-balance leading-tight"
+                className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight mb-6"
               >
-                Transforme sua cozinha ou banheiro com mármore de alto padrão
+                Projetos em Mármore e Granito que elevam o padrão do seu ambiente
               </motion.h1>
 
               <motion.p
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 25 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-xl md:text-2xl text-gray-200 mb-10 leading-relaxed max-w-2xl"
+                className="text-lg sm:text-xl text-white/85 leading-relaxed mb-10 max-w-2xl"
               >
-                Projetos sob medida com acabamento impecável e instalação profissional.
+                Bancadas, escadas, lavatórios, revestimentos e soluções sob medida com acabamento
+                refinado, instalação profissional e atendimento personalizado.
               </motion.p>
 
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 25 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="flex flex-col sm:flex-row gap-4"
@@ -281,65 +282,74 @@ const HomePage = () => {
                 <Button
                   size="lg"
                   onClick={() => window.open(whatsappUrl, '_blank')}
-                  className="bg-primary text-white hover:bg-primary/90 text-xl px-10 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 active:scale-[0.98] w-full sm:w-auto"
+                  className="bg-primary text-white hover:bg-primary/90 text-lg px-8 py-6 rounded-xl shadow-2xl hover:shadow-primary/25 transition-all duration-300"
                 >
-                  <WhatsAppIcon className="w-7 h-7 mr-3" />
-                  Pedir orçamento no WhatsApp
+                  <WhatsAppIcon className="w-5 h-5 mr-2" />
+                  Solicitar orçamento
                 </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => {
+                    const section = document.getElementById('portfolio');
+                    if (section) section.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-lg px-8 py-6 rounded-xl border-white/40 bg-white/10 text-white hover:bg-white hover:text-primary"
+                >
+                  Ver obras realizadas
+                </Button>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 25 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12"
+              >
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
+                  <div className="flex items-center gap-3 mb-2">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                    <span className="text-white font-semibold">Acabamento premium</span>
+                  </div>
+                  <p className="text-white/75 text-sm">Projetos sob medida com alto padrão visual.</p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Users className="w-5 h-5 text-white" />
+                    <span className="text-white font-semibold">Atendimento próximo</span>
+                  </div>
+                  <p className="text-white/75 text-sm">Orientação personalizada em cada etapa.</p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-4 border border-white/15">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Star className="w-5 h-5 text-white fill-white" />
+                    <span className="text-white font-semibold">Clientes satisfeitos</span>
+                  </div>
+                  <p className="text-white/75 text-sm">Qualidade reconhecida em Piracicaba e região.</p>
+                </div>
               </motion.div>
             </div>
           </div>
         </section>
 
-        <section className="py-12 bg-primary text-white relative z-20 -mt-8 mx-4 sm:mx-6 lg:mx-8 rounded-2xl shadow-2xl max-w-7xl xl:mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/20">
-            <div className="flex flex-col items-center justify-center text-center px-6 pt-4 md:pt-0">
-              <Star className="w-10 h-10 text-yellow-400 mb-3 fill-yellow-400" />
-              <span className="text-3xl font-bold mb-1">4.9</span>
-              <span className="text-white/80 font-medium">Avaliação no Google</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center px-6 pt-8 md:pt-0">
-              <TrendingUp className="w-10 h-10 text-blue-300 mb-3" />
-              <span className="text-3xl font-bold mb-1">+100</span>
-              <span className="text-white/80 font-medium">Projetos realizados</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center px-6 pt-8 md:pt-0">
-              <Users className="w-10 h-10 text-blue-300 mb-3" />
-              <span className="text-3xl font-bold mb-1">100%</span>
-              <span className="text-white/80 font-medium">Clientes satisfeitos na região</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="inline-block"
-            >
-              <h2 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight">
-                Mais de <span className="text-primary">40 anos</span> de experiência
-              </h2>
-              <div className="h-1.5 w-32 bg-accent mx-auto mt-6 rounded-full"></div>
-            </motion.div>
-          </div>
-        </section>
-
-        <section id="services" className="py-24 bg-muted/50">
+        <section id="services" className="py-24 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
+              <p className="text-primary font-semibold uppercase tracking-[0.2em] mb-3">
+                Soluções sob medida
+              </p>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Nossos Serviços
+                Serviços especializados em mármore e granito
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Soluções completas em pedras naturais e industrializadas para valorizar cada
-                detalhe do seu projeto.
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Do projeto à instalação, entregamos peças sob medida com sofisticação, resistência e
+                acabamento impecável para transformar qualquer ambiente.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {services.map((service, index) => (
                 <ServiceCard
                   key={index}
@@ -350,28 +360,21 @@ const HomePage = () => {
                 />
               ))}
             </div>
-
-            <div className="mt-16 text-center">
-              <Button
-                size="lg"
-                onClick={() => window.open(whatsappUrl, '_blank')}
-                className="bg-primary text-white hover:bg-primary/90 text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <WhatsAppIcon className="w-5 h-5 mr-2" />
-                Solicitar orçamento
-              </Button>
-            </div>
           </div>
         </section>
 
         <section id="portfolio" className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
+              <p className="text-primary font-semibold uppercase tracking-[0.2em] mb-3">
+                Obras realizadas
+              </p>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Obras Realizadas
+                Veja alguns projetos executados
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Veja alguns projetos executados pela Marmoraria Nível.
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Imagens reais adicionadas direto pelo cliente, mostrando a qualidade do acabamento e
+                a variedade de soluções que entregamos.
               </p>
             </div>
 

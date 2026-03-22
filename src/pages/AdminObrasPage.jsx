@@ -1,309 +1,394 @@
-import React, { useMemo, useState } from 'react';
-import { Lock, LogOut, Trash2, Upload, ImagePlus, Gem } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { uploadImage } from '@/lib/storage';
+import React, { useEffect, useState } from 'react';
+import { Trash2, Upload, ImagePlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const STORAGE_KEY = 'nivel-obras-galeria';
-const CATALOG_STORAGE_KEY = 'nivel-catalogo-galeria';
-const PASSWORD = 'nivel123';
-
 const AdminObrasPage = () => {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [isUploadingObra, setIsUploadingObra] = useState(false);
-  const [isUploadingCatalog, setIsUploadingCatalog] = useState(false);
+  const [obras, setObras] = useState([]);
+  const [catalogo, setCatalogo] = useState([]);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [images, setImages] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [obraFile, setObraFile] = useState(null);
+  const [obraTitle, setObraTitle] = useState('');
+  const [obraDescription, setObraDescription] = useState('');
 
-  const [catalogTitle, setCatalogTitle] = useState('');
-  const [catalogDescription, setCatalogDescription] = useState('');
-  const [catalogItems, setCatalogItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem(CATALOG_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [catalogoFile, setCatalogoFile] = useState(null);
+  const [catalogoTitle, setCatalogoTitle] = useState('');
+  const [catalogoDescription, setCatalogoDescription] = useState('');
 
-  const sortedImages = useMemo(() => [...images].reverse(), [images]);
-  const sortedCatalogItems = useMemo(() => [...catalogItems].reverse(), [catalogItems]);
+  const [loadingObra, setLoadingObra] = useState(false);
+  const [loadingCatalogo, setLoadingCatalogo] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const persistImages = (next) => {
-    setImages(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
+  useEffect(() => {
+    fetchObras();
+    fetchCatalogo();
+  }, []);
 
-  const persistCatalog = (next) => {
-    setCatalogItems(next);
-    localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(next));
-  };
+  const fetchObras = async () => {
+    const { data, error } = await supabase
+      .from('obras')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-
-    if (password === PASSWORD) {
-      setAuthenticated(true);
-      setPassword('');
+    if (error) {
+      console.error('Erro ao buscar obras:', error);
       return;
     }
 
-    alert('Senha incorreta.');
+    setObras(data || []);
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const fetchCatalogo = async () => {
+    const { data, error } = await supabase
+      .from('catalogo')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar catálogo:', error);
+      return;
+    }
+
+    setCatalogo(data || []);
+  };
+
+  const sanitizeFileName = (name) => {
+    return name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9._-]/g, '');
+  };
+
+  const uploadImageToBucket = async (bucket, file) => {
+    const safeName = sanitizeFileName(file.name);
+    const filePath = `${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+    return {
+      imageUrl: data.publicUrl,
+      storagePath: filePath,
+    };
+  };
+
+  const handleUploadObra = async (e) => {
+    e.preventDefault();
+
+    if (!obraFile) {
+      alert('Selecione uma imagem para a obra.');
+      return;
+    }
 
     try {
-      setIsUploadingObra(true);
+      setLoadingObra(true);
 
-      const finalTitle = title.trim() || 'Obra realizada';
-      const finalDescription =
-        description.trim() || 'Projeto adicionado pelo cliente.';
+      const { imageUrl, storagePath } = await uploadImageToBucket('obras', obraFile);
 
-      const imageUrl = await uploadImage(file, 'Site-Images', 'obras');
-
-      const { error } = await supabase.from('obras').insert([
+      const { error: insertError } = await supabase.from('obras').insert([
         {
-          title: finalTitle,
-          description: finalDescription,
+          title: obraTitle || 'Obra realizada',
+          description: obraDescription || 'Projeto adicionado pelo cliente.',
           image_url: imageUrl,
+          storage_path: storagePath,
         },
       ]);
 
-      if (error) {
-        throw error;
+      if (insertError) {
+        throw insertError;
       }
 
-      const next = [
-        ...images,
-        {
-          id: Date.now(),
-          url: imageUrl,
-          title: finalTitle,
-          description: finalDescription,
-        },
-      ];
-
-      persistImages(next);
-      setTitle('');
-      setDescription('');
-      e.target.value = '';
-
-      alert('Foto enviada e salva no sistema com sucesso.');
+      setObraFile(null);
+      setObraTitle('');
+      setObraDescription('');
+      await fetchObras();
+      alert('Obra enviada com sucesso.');
     } catch (error) {
       console.error('Erro ao enviar obra:', error);
-      alert('Erro ao enviar imagem da obra.');
+      alert('Erro ao enviar obra.');
     } finally {
-      setIsUploadingObra(false);
+      setLoadingObra(false);
     }
   };
 
-  const handleCatalogFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleUploadCatalogo = async (e) => {
+    e.preventDefault();
+
+    if (!catalogoFile) {
+      alert('Selecione uma imagem para o catálogo.');
+      return;
+    }
 
     try {
-      setIsUploadingCatalog(true);
+      setLoadingCatalogo(true);
 
-      const finalTitle = catalogTitle.trim() || 'Material do catálogo';
-      const finalDescription =
-        catalogDescription.trim() || 'Item adicionado no catálogo pelo cliente.';
+      const { imageUrl, storagePath } = await uploadImageToBucket('catalogo', catalogoFile);
 
-      const imageUrl = await uploadImage(file, 'Site-Images', 'catalogo');
-
-      const { error } = await supabase.from('catalogo').insert([
+      const { error: insertError } = await supabase.from('catalogo').insert([
         {
-          title: finalTitle,
-          description: finalDescription,
+          title: catalogoTitle || 'Material do catálogo',
+          description: catalogoDescription || 'Item adicionado no catálogo pelo cliente.',
           image_url: imageUrl,
+          storage_path: storagePath,
         },
       ]);
 
-      if (error) {
-        throw error;
+      if (insertError) {
+        throw insertError;
       }
 
-      const next = [
-        ...catalogItems,
-        {
-          id: Date.now(),
-          image: imageUrl,
-          title: finalTitle,
-          description: finalDescription,
-        },
-      ];
-
-      persistCatalog(next);
-      setCatalogTitle('');
-      setCatalogDescription('');
-      e.target.value = '';
-
-      alert('Item do catálogo enviado e salvo no sistema com sucesso.');
+      setCatalogoFile(null);
+      setCatalogoTitle('');
+      setCatalogoDescription('');
+      await fetchCatalogo();
+      alert('Item do catálogo enviado com sucesso.');
     } catch (error) {
-      console.error('Erro ao enviar catálogo:', error);
+      console.error('Erro ao enviar item do catálogo:', error);
       alert('Erro ao enviar item do catálogo.');
     } finally {
-      setIsUploadingCatalog(false);
+      setLoadingCatalogo(false);
     }
   };
 
-  const handleDelete = (id) => {
-    const next = images.filter((item) => item.id !== id);
-    persistImages(next);
+  const handleDeleteObra = async (item) => {
+    const confirmar = window.confirm('Tem certeza que deseja excluir esta obra?');
+    if (!confirmar) return;
+
+    try {
+      setDeletingId(`obra-${item.id}`);
+
+      if (item.storage_path) {
+        const { error: storageError } = await supabase.storage
+          .from('obras')
+          .remove([item.storage_path]);
+
+        if (storageError) {
+          throw storageError;
+        }
+      }
+
+      const { error: deleteError } = await supabase.from('obras').delete().eq('id', item.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      setObras((prev) => prev.filter((obra) => obra.id !== item.id));
+      alert('Obra excluída com sucesso.');
+    } catch (error) {
+      console.error('Erro ao excluir obra:', error);
+      alert('Erro ao excluir obra.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const handleDeleteCatalog = (id) => {
-    const next = catalogItems.filter((item) => item.id !== id);
-    persistCatalog(next);
+  const handleDeleteCatalogo = async (item) => {
+    const confirmar = window.confirm('Tem certeza que deseja excluir este item do catálogo?');
+    if (!confirmar) return;
+
+    try {
+      setDeletingId(`catalogo-${item.id}`);
+
+      if (item.storage_path) {
+        const { error: storageError } = await supabase.storage
+          .from('catalogo')
+          .remove([item.storage_path]);
+
+        if (storageError) {
+          throw storageError;
+        }
+      }
+
+      const { error: deleteError } = await supabase.from('catalogo').delete().eq('id', item.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      setCatalogo((prev) => prev.filter((catalogoItem) => catalogoItem.id !== item.id));
+      alert('Item do catálogo excluído com sucesso.');
+    } catch (error) {
+      console.error('Erro ao excluir item do catálogo:', error);
+      alert('Erro ao excluir item do catálogo.');
+    } finally {
+      setDeletingId(null);
+    }
   };
-
-  if (!authenticated) {
-    return (
-      <main className="min-h-screen bg-muted/40 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-border p-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center mb-6">
-            <Lock className="w-8 h-8" />
-          </div>
-
-          <h1 className="text-3xl font-bold text-center text-foreground mb-2">
-            Área do cliente
-          </h1>
-
-          <p className="text-center text-muted-foreground mb-8">
-            Acesso restrito para envio e gerenciamento das fotos das obras e do catálogo.
-          </p>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              placeholder="Digite a senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            />
-
-            <Button
-              type="submit"
-              className="w-full bg-primary text-white hover:bg-primary/90 py-6 rounded-xl text-base"
-            >
-              Entrar
-            </Button>
-          </form>
-        </div>
-      </main>
-    );
-  }
 
   return (
-    <main className="min-h-screen bg-muted/40 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Gerenciar conteúdo do site</h1>
-            <p className="text-muted-foreground mt-2">
-              Atualize as fotos das obras e adicione novos materiais no catálogo.
-            </p>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => setAuthenticated(false)}
-            className="rounded-xl"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+    <main className="min-h-screen bg-slate-50 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-10">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Painel do cliente</h1>
+          <p className="text-slate-600 mt-2">
+            Adicione e exclua imagens de Obras Realizadas e do Catálogo direto pelo site.
+          </p>
         </div>
 
-        <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-              <ImagePlus className="w-6 h-6" />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <section className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                <ImagePlus className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Adicionar obra</h2>
+                <p className="text-slate-500">Essa imagem aparecerá em Obras Realizadas.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Adicionar nova obra</h2>
-              <p className="text-muted-foreground">
-                Envie apenas a foto ou, se quiser, complete com título e descrição.
-              </p>
+
+            <form onSubmit={handleUploadObra} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Título</label>
+                <input
+                  type="text"
+                  value={obraTitle}
+                  onChange={(e) => setObraTitle(e.target.value)}
+                  placeholder="Ex: Bancada de cozinha em granito"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Descrição</label>
+                <textarea
+                  value={obraDescription}
+                  onChange={(e) => setObraDescription(e.target.value)}
+                  placeholder="Descreva rapidamente a obra"
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Imagem</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setObraFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-white"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loadingObra}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-xl px-5 py-3 hover:opacity-90 transition disabled:opacity-60"
+              >
+                {loadingObra ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                {loadingObra ? 'Enviando...' : 'Enviar obra'}
+              </button>
+            </form>
+          </section>
+
+          <section className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                <ImagePlus className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Adicionar item no catálogo</h2>
+                <p className="text-slate-500">Essa imagem aparecerá na seção Catálogo.</p>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Título da obra (opcional)"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            />
+            <form onSubmit={handleUploadCatalogo} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Título</label>
+                <input
+                  type="text"
+                  value={catalogoTitle}
+                  onChange={(e) => setCatalogoTitle(e.target.value)}
+                  placeholder="Ex: Branco Prime"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
 
-            <input
-              type="text"
-              placeholder="Descrição curta (opcional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Descrição</label>
+                <textarea
+                  value={catalogoDescription}
+                  onChange={(e) => setCatalogoDescription(e.target.value)}
+                  placeholder="Descreva rapidamente o material"
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
 
-          <label className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center cursor-pointer hover:bg-primary/10 transition-colors">
-            <Upload className="w-8 h-8 text-primary" />
-            <span className="text-lg font-semibold text-foreground">
-              {isUploadingObra ? 'Enviando imagem...' : 'Clique para escolher a foto'}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              A imagem será adicionada à galeria pública automaticamente.
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              disabled={isUploadingObra}
-            />
-          </label>
-        </section>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Imagem</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCatalogoFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-white"
+                />
+              </div>
 
-        <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Fotos já enviadas</h2>
+              <button
+                type="submit"
+                disabled={loadingCatalogo}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-xl px-5 py-3 hover:opacity-90 transition disabled:opacity-60"
+              >
+                {loadingCatalogo ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                {loadingCatalogo ? 'Enviando...' : 'Enviar item do catálogo'}
+              </button>
+            </form>
+          </section>
+        </div>
 
-          {sortedImages.length === 0 ? (
-            <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
-              Nenhuma foto adicionada ainda.
+        <section className="mt-10 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Obras cadastradas</h2>
+
+          {obras.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 border border-dashed border-slate-300 p-8 text-center text-slate-500">
+              Nenhuma obra cadastrada ainda.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedImages.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {obras.map((item) => (
                 <div
                   key={item.id}
-                  className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm"
+                  className="rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm"
                 >
-                  <img src={item.url} alt={item.title} className="w-full h-64 object-cover" />
+                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    <img
+                      src={item.image_url}
+                      alt={item.title || 'Obra'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                  <div className="p-4">
-                    <h3 className="font-bold text-foreground">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                  <div className="p-5">
+                    <h3 className="font-bold text-slate-900 text-lg">
+                      {item.title || 'Obra realizada'}
+                    </h3>
+                    <p className="text-slate-600 mt-2 text-sm leading-relaxed">
+                      {item.description || 'Projeto adicionado pelo cliente.'}
+                    </p>
 
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDelete(item.id)}
-                      className="mt-4 w-full rounded-xl text-red-600 border-red-200 hover:bg-red-50"
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteObra(item)}
+                      disabled={deletingId === `obra-${item.id}`}
+                      className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white font-semibold px-4 py-3 hover:bg-red-700 transition disabled:opacity-60"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir foto
-                    </Button>
+                      {deletingId === `obra-${item.id}` ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-5 h-5" />
+                      )}
+                      {deletingId === `obra-${item.id}` ? 'Excluindo...' : 'Excluir obra'}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -311,85 +396,49 @@ const AdminObrasPage = () => {
           )}
         </section>
 
-        <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-              <Gem className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Adicionar item no catálogo</h2>
-              <p className="text-muted-foreground">
-                Cadastre a foto da pedra, o nome e uma descrição para aparecer no carrossel do catálogo.
-              </p>
-            </div>
-          </div>
+        <section className="mt-10 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Itens do catálogo</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Nome da pedra ou material"
-              value={catalogTitle}
-              onChange={(e) => setCatalogTitle(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            />
-
-            <input
-              type="text"
-              placeholder="Descrição curta do material"
-              value={catalogDescription}
-              onChange={(e) => setCatalogDescription(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
-
-          <label className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center cursor-pointer hover:bg-primary/10 transition-colors">
-            <Upload className="w-8 h-8 text-primary" />
-            <span className="text-lg font-semibold text-foreground">
-              {isUploadingCatalog ? 'Enviando imagem...' : 'Clique para escolher a foto da pedra'}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              O item será adicionado automaticamente ao carrossel do catálogo.
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCatalogFileChange}
-              className="hidden"
-              disabled={isUploadingCatalog}
-            />
-          </label>
-        </section>
-
-        <section className="bg-white rounded-3xl border border-border p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-foreground mb-6">
-            Itens já cadastrados no catálogo
-          </h2>
-
-          {sortedCatalogItems.length === 0 ? (
-            <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
-              Nenhum item do catálogo adicionado ainda.
+          {catalogo.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 border border-dashed border-slate-300 p-8 text-center text-slate-500">
+              Nenhum item de catálogo cadastrado ainda.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedCatalogItems.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {catalogo.map((item) => (
                 <div
                   key={item.id}
-                  className="border border-border rounded-2xl overflow-hidden bg-white shadow-sm"
+                  className="rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm"
                 >
-                  <img src={item.image} alt={item.title} className="w-full h-64 object-cover" />
+                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    <img
+                      src={item.image_url}
+                      alt={item.title || 'Catálogo'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                  <div className="p-4">
-                    <h3 className="font-bold text-foreground">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                  <div className="p-5">
+                    <h3 className="font-bold text-slate-900 text-lg">
+                      {item.title || 'Material do catálogo'}
+                    </h3>
+                    <p className="text-slate-600 mt-2 text-sm leading-relaxed">
+                      {item.description || 'Item adicionado no catálogo pelo cliente.'}
+                    </p>
 
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDeleteCatalog(item.id)}
-                      className="mt-4 w-full rounded-xl text-red-600 border-red-200 hover:bg-red-50"
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCatalogo(item)}
+                      disabled={deletingId === `catalogo-${item.id}`}
+                      className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white font-semibold px-4 py-3 hover:bg-red-700 transition disabled:opacity-60"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir item
-                    </Button>
+                      {deletingId === `catalogo-${item.id}` ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-5 h-5" />
+                      )}
+                      {deletingId === `catalogo-${item.id}` ? 'Excluindo...' : 'Excluir item'}
+                    </button>
                   </div>
                 </div>
               ))}

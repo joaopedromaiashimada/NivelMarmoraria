@@ -104,6 +104,7 @@ const HomePage = () => {
 
   const [portfolioImages, setPortfolioImages] = useState([]);
   const [catalogItems, setCatalogItems] = useState([]);
+  const [portfolioIndex, setPortfolioIndex] = useState(0);
   const [catalogIndex, setCatalogIndex] = useState(0);
 
   useEffect(() => {
@@ -163,19 +164,46 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
+    if (portfolioIndex > Math.max(portfolioImages.length - 1, 0)) {
+      setPortfolioIndex(0);
+    }
+  }, [portfolioIndex, portfolioImages.length]);
+
+  useEffect(() => {
     if (catalogIndex > Math.max(catalogItems.length - 1, 0)) {
       setCatalogIndex(0);
     }
   }, [catalogIndex, catalogItems.length]);
 
+  const visiblePortfolioItems = useMemo(() => {
+    if (portfolioImages.length === 0) return [];
+    const itemsToShow = Math.min(3, portfolioImages.length);
+
+    return Array.from(
+      { length: itemsToShow },
+      (_, offset) => portfolioImages[(portfolioIndex + offset) % portfolioImages.length]
+    );
+  }, [portfolioIndex, portfolioImages]);
+
   const visibleCatalogItems = useMemo(() => {
     if (catalogItems.length === 0) return [];
     const itemsToShow = Math.min(3, catalogItems.length);
+
     return Array.from(
       { length: itemsToShow },
       (_, offset) => catalogItems[(catalogIndex + offset) % catalogItems.length]
     );
   }, [catalogIndex, catalogItems]);
+
+  const handlePortfolioPrev = () => {
+    if (portfolioImages.length === 0) return;
+    setPortfolioIndex((prev) => (prev - 1 + portfolioImages.length) % portfolioImages.length);
+  };
+
+  const handlePortfolioNext = () => {
+    if (portfolioImages.length === 0) return;
+    setPortfolioIndex((prev) => (prev + 1) % portfolioImages.length);
+  };
 
   const handleCatalogPrev = () => {
     if (catalogItems.length === 0) return;
@@ -347,21 +375,59 @@ const HomePage = () => {
               </p>
             </div>
 
-            {portfolioImages.length === 0 ? (
-              <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
-                Nenhuma obra cadastrada ainda.
+            {visiblePortfolioItems.length > 0 ? (
+              <div className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                  {visiblePortfolioItems.map((item, index) => (
+                    <PortfolioCard
+                      key={`${item.id || item.title}-${portfolioIndex}-${index}`}
+                      image={item.url}
+                      title={item.title}
+                      description={item.description}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                {portfolioImages.length > 1 && (
+                  <div className="flex items-center justify-center gap-3 mt-8">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handlePortfolioPrev}
+                      className="rounded-full w-12 h-12 p-0 border-primary text-primary hover:bg-primary hover:text-white"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      {portfolioImages.map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setPortfolioIndex(index)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            index === portfolioIndex ? 'w-8 bg-primary' : 'w-2.5 bg-primary/25'
+                          }`}
+                          aria-label={`Ir para obra ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handlePortfolioNext}
+                      className="rounded-full w-12 h-12 p-0 border-primary text-primary hover:bg-primary hover:text-white"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {portfolioImages.map((item, index) => (
-                  <PortfolioCard
-                    key={item.id || index}
-                    image={item.url}
-                    title={item.title}
-                    description={item.description}
-                    index={index}
-                  />
-                ))}
+              <div className="rounded-2xl bg-muted/60 p-8 text-center text-muted-foreground">
+                Nenhuma obra cadastrada ainda.
               </div>
             )}
           </div>
@@ -396,13 +462,16 @@ const HomePage = () => {
                           className="w-full h-full object-cover"
                         />
                       </div>
+
                       <div className="p-8 flex-1 flex flex-col">
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
                           <Gem className="w-7 h-7" />
                         </div>
+
                         <h3 className="text-2xl font-bold text-foreground mb-3">
                           {item.title}
                         </h3>
+
                         <p className="text-muted-foreground leading-relaxed flex-grow">
                           {item.description}
                         </p>
@@ -466,6 +535,7 @@ const HomePage = () => {
                   o melhor acabamento.
                 </p>
               </div>
+
               <Button
                 size="lg"
                 onClick={() => window.open(whatsappUrl, '_blank')}
@@ -489,11 +559,13 @@ const HomePage = () => {
                   Nosso compromisso é entregar não apenas pedras, mas a realização do seu sonho com
                   a máxima qualidade e segurança que só décadas de experiência podem oferecer.
                 </p>
+
                 <div className="space-y-4">
                   {differentials.map((diff, index) => (
                     <DifferentialCard key={index} title={diff} index={index} />
                   ))}
                 </div>
+
                 <div className="mt-10">
                   <Button
                     size="lg"
@@ -505,6 +577,7 @@ const HomePage = () => {
                   </Button>
                 </div>
               </div>
+
               <div className="relative">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                   <img
@@ -513,6 +586,7 @@ const HomePage = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
+
                 <div className="absolute -bottom-8 -left-8 bg-white p-6 rounded-2xl shadow-xl border border-border/50 hidden md:block">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
@@ -536,9 +610,11 @@ const HomePage = () => {
                 <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
                 ⭐ 4.9 de média de satisfação
               </div>
+
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 O que nossos clientes dizem
               </h2>
+
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 A satisfação de quem já confiou no nosso trabalho é a nossa maior garantia.
               </p>
@@ -573,13 +649,16 @@ const HomePage = () => {
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1608635661512-52c656e0d4e5')] bg-cover bg-center mix-blend-overlay"></div>
           </div>
+
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
               Fale com um especialista agora pelo WhatsApp
             </h2>
+
             <p className="text-xl text-blue-100 mb-10 font-medium">
               Orçamento sem compromisso • Resposta imediata
             </p>
+
             <Button
               size="lg"
               onClick={() => window.open(whatsappUrl, '_blank')}

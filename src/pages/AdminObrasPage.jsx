@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Lock, LogOut, Trash2, Upload, ImagePlus, Gem } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { uploadImage } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
 
 const STORAGE_KEY = 'nivel-obras-galeria';
 const CATALOG_STORAGE_KEY = 'nivel-catalogo-galeria';
@@ -67,15 +68,31 @@ const AdminObrasPage = () => {
     try {
       setIsUploadingObra(true);
 
-      const imageUrl = await uploadImage(file, 'Site-Images', 'clientes');
+      const finalTitle = title.trim() || 'Obra realizada';
+      const finalDescription =
+        description.trim() || 'Projeto adicionado pelo cliente.';
+
+      const imageUrl = await uploadImage(file, 'Site-Images', 'obras');
+
+      const { error } = await supabase.from('obras').insert([
+        {
+          title: finalTitle,
+          description: finalDescription,
+          image_url: imageUrl,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
 
       const next = [
         ...images,
         {
           id: Date.now(),
           url: imageUrl,
-          title: title.trim() || 'Obra realizada',
-          description: description.trim() || 'Projeto adicionado pelo cliente.',
+          title: finalTitle,
+          description: finalDescription,
         },
       ];
 
@@ -84,7 +101,7 @@ const AdminObrasPage = () => {
       setDescription('');
       e.target.value = '';
 
-      alert('Foto enviada com sucesso.');
+      alert('Foto enviada e salva no sistema com sucesso.');
     } catch (error) {
       console.error('Erro ao enviar obra:', error);
       alert('Erro ao enviar imagem da obra.');
@@ -100,15 +117,31 @@ const AdminObrasPage = () => {
     try {
       setIsUploadingCatalog(true);
 
-      const imageUrl = await uploadImage(file, 'Site-Images', 'itens');
+      const finalTitle = catalogTitle.trim() || 'Material do catálogo';
+      const finalDescription =
+        catalogDescription.trim() || 'Item adicionado no catálogo pelo cliente.';
+
+      const imageUrl = await uploadImage(file, 'Site-Images', 'catalogo');
+
+      const { error } = await supabase.from('catalogo').insert([
+        {
+          title: finalTitle,
+          description: finalDescription,
+          image_url: imageUrl,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
 
       const next = [
         ...catalogItems,
         {
           id: Date.now(),
           image: imageUrl,
-          title: catalogTitle.trim() || 'Material do catálogo',
-          description: catalogDescription.trim() || 'Item adicionado no catálogo pelo cliente.',
+          title: finalTitle,
+          description: finalDescription,
         },
       ];
 
@@ -117,7 +150,7 @@ const AdminObrasPage = () => {
       setCatalogDescription('');
       e.target.value = '';
 
-      alert('Item do catálogo enviado com sucesso.');
+      alert('Item do catálogo enviado e salvo no sistema com sucesso.');
     } catch (error) {
       console.error('Erro ao enviar catálogo:', error);
       alert('Erro ao enviar item do catálogo.');

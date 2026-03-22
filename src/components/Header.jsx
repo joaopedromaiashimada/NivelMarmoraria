@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import WhatsAppIcon from '@/components/WhatsAppIcon.jsx';
+import { uploadImage } from '@/uploadImage';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
+  const [logoUrl, setLogoUrl] = useState(localStorage.getItem('hero_image') || '/logo-nivel.png');
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const scrollToSection = (sectionId) => {
@@ -19,13 +22,28 @@ const Header = () => {
 
   const handleSecretAccess = () => {
     const nextClicks = secretClicks + 1;
+
     if (nextClicks >= 5) {
       setSecretClicks(0);
-      navigate('/admin-obras');
+      fileInputRef.current?.click();
       return;
     }
+
     setSecretClicks(nextClicks);
     setTimeout(() => setSecretClicks(0), 1800);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadImage(file);
+
+    if (url) {
+      localStorage.setItem('hero_image', url);
+      setLogoUrl(url);
+      window.location.reload();
+    }
   };
 
   const navItems = [
@@ -50,7 +68,7 @@ const Header = () => {
             }}
             className="flex items-center gap-2 text-left transition-opacity duration-200 hover:opacity-90 shrink-0"
           >
-            <img src="/logo-nivel.png" alt="Logo Marmoraria Nível" className="h-9 sm:h-10 w-auto object-contain" />
+            <img src={logoUrl} alt="Logo Marmoraria Nível" className="h-9 sm:h-10 w-auto object-contain" />
             <span className="text-xl sm:text-[2rem] font-extrabold text-primary tracking-tight leading-none">
               Marmoraria Nível
             </span>
@@ -109,6 +127,14 @@ const Header = () => {
           </nav>
         </div>
       )}
+
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
     </header>
   );
 };

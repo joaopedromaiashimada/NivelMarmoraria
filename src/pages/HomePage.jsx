@@ -650,7 +650,7 @@ const HomePage = () => {
 
         <section className="py-24 bg-primary relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1608635661512-52c656e0d4e5')] bg-cover bg-center mix-blend-overlay"></div>
+            <div className="absolute inset-0 bg-[url('/escada.png')] bg-cover bg-center"></div>
           </div>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">

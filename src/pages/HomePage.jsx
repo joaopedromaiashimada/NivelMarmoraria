@@ -462,16 +462,13 @@ const HomePage = () => {
                           className="w-full h-full object-cover"
                         />
                       </div>
-
                       <div className="p-8 flex-1 flex flex-col">
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
                           <Gem className="w-7 h-7" />
                         </div>
-
                         <h3 className="text-2xl font-bold text-foreground mb-3">
                           {item.title}
                         </h3>
-
                         <p className="text-muted-foreground leading-relaxed flex-grow">
                           {item.description}
                         </p>
@@ -535,7 +532,6 @@ const HomePage = () => {
                   o melhor acabamento.
                 </p>
               </div>
-
               <Button
                 size="lg"
                 onClick={() => window.open(whatsappUrl, '_blank')}
@@ -559,13 +555,11 @@ const HomePage = () => {
                   Nosso compromisso é entregar não apenas pedras, mas a realização do seu sonho com
                   a máxima qualidade e segurança que só décadas de experiência podem oferecer.
                 </p>
-
                 <div className="space-y-4">
                   {differentials.map((diff, index) => (
                     <DifferentialCard key={index} title={diff} index={index} />
                   ))}
                 </div>
-
                 <div className="mt-10">
                   <Button
                     size="lg"
@@ -577,7 +571,6 @@ const HomePage = () => {
                   </Button>
                 </div>
               </div>
-
               <div className="relative">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                   <img
@@ -586,7 +579,6 @@ const HomePage = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-
                 <div className="absolute -bottom-8 -left-8 bg-white p-6 rounded-2xl shadow-xl border border-border/50 hidden md:block">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
@@ -610,11 +602,9 @@ const HomePage = () => {
                 <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
                 ⭐ 4.9 de média de satisfação
               </div>
-
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 O que nossos clientes dizem
               </h2>
-
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 A satisfação de quem já confiou no nosso trabalho é a nossa maior garantia.
               </p>
@@ -649,16 +639,13 @@ const HomePage = () => {
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1608635661512-52c656e0d4e5')] bg-cover bg-center mix-blend-overlay"></div>
           </div>
-
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
               Fale com um especialista agora pelo WhatsApp
             </h2>
-
             <p className="text-xl text-blue-100 mb-10 font-medium">
               Orçamento sem compromisso • Resposta imediata
             </p>
-
             <Button
               size="lg"
               onClick={() => window.open(whatsappUrl, '_blank')}

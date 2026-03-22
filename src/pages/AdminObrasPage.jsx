@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Trash2, Upload, ImagePlus, Loader2 } from 'lucide-react';
+import { Trash2, Upload, ImagePlus, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'nivel123';
+
 const AdminObrasPage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
   const [obras, setObras] = useState([]);
   const [catalogo, setCatalogo] = useState([]);
 
@@ -19,9 +25,38 @@ const AdminObrasPage = () => {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    fetchObras();
-    fetchCatalogo();
+    const savedAuth = sessionStorage.getItem('admin-obras-auth');
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchObras();
+      fetchCatalogo();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('admin-obras-auth', 'true');
+      setLoginError('');
+      return;
+    }
+
+    setLoginError('Senha incorreta.');
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin-obras-auth');
+    setIsAuthenticated(false);
+    setPasswordInput('');
+    setLoginError('');
+  };
 
   const fetchObras = async () => {
     const { data, error } = await supabase
@@ -60,24 +95,46 @@ const AdminObrasPage = () => {
   };
 
   const uploadImageToBucket = async (bucket, file) => {
-    const safeName = sanitizeFileName(file.name);
+    if (!file) {
+      throw new Error('Nenhum arquivo selecionado.');
+    }
+
+    const safeName = sanitizeFileName(file.name || 'imagem');
     const filePath = `${Date.now()}-${safeName}`;
 
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
     if (uploadError) {
-      throw uploadError;
+      throw new Error(`Erro no storage (${bucket}): ${uploadError.message}`);
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+    if (!data?.publicUrl) {
+      throw new Error(`Não foi possível gerar a URL pública da imagem em ${bucket}.`);
+    }
 
     return {
       imageUrl: data.publicUrl,
       storagePath: filePath,
     };
+  };
+
+  const resetObraForm = () => {
+    setObraFile(null);
+    setObraTitle('');
+    setObraDescription('');
+  };
+
+  const resetCatalogoForm = () => {
+    setCatalogoFile(null);
+    setCatalogoTitle('');
+    setCatalogoDescription('');
   };
 
   const handleUploadObra = async (e) => {
@@ -103,17 +160,15 @@ const AdminObrasPage = () => {
       ]);
 
       if (insertError) {
-        throw insertError;
+        throw new Error(`Erro ao salvar no banco (obras): ${insertError.message}`);
       }
 
-      setObraFile(null);
-      setObraTitle('');
-      setObraDescription('');
+      resetObraForm();
       await fetchObras();
       alert('Obra enviada com sucesso.');
     } catch (error) {
       console.error('Erro ao enviar obra:', error);
-      alert('Erro ao enviar obra.');
+      alert(error.message || 'Erro ao enviar obra.');
     } finally {
       setLoadingObra(false);
     }
@@ -142,17 +197,15 @@ const AdminObrasPage = () => {
       ]);
 
       if (insertError) {
-        throw insertError;
+        throw new Error(`Erro ao salvar no banco (catálogo): ${insertError.message}`);
       }
 
-      setCatalogoFile(null);
-      setCatalogoTitle('');
-      setCatalogoDescription('');
+      resetCatalogoForm();
       await fetchCatalogo();
       alert('Item do catálogo enviado com sucesso.');
     } catch (error) {
       console.error('Erro ao enviar item do catálogo:', error);
-      alert('Erro ao enviar item do catálogo.');
+      alert(error.message || 'Erro ao enviar item do catálogo.');
     } finally {
       setLoadingCatalogo(false);
     }
@@ -171,21 +224,25 @@ const AdminObrasPage = () => {
           .remove([item.storage_path]);
 
         if (storageError) {
-          throw storageError;
+          throw new Error(`Erro ao excluir do storage (obras): ${storageError.message}`);
         }
       }
 
-      const { error: deleteError } = await supabase.from('obras').delete().eq('id', item.id);
+      const { error: deleteError } = await supabase
+        .from('obras')
+        .delete()
+        .eq('id', item.id);
 
       if (deleteError) {
-        throw deleteError;
+        throw new Error(`Erro ao excluir do banco (obras): ${deleteError.message}`);
       }
 
       setObras((prev) => prev.filter((obra) => obra.id !== item.id));
+      await fetchObras();
       alert('Obra excluída com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir obra:', error);
-      alert('Erro ao excluir obra.');
+      alert(error.message || 'Erro ao excluir obra.');
     } finally {
       setDeletingId(null);
     }
@@ -204,34 +261,91 @@ const AdminObrasPage = () => {
           .remove([item.storage_path]);
 
         if (storageError) {
-          throw storageError;
+          throw new Error(`Erro ao excluir do storage (catálogo): ${storageError.message}`);
         }
       }
 
-      const { error: deleteError } = await supabase.from('catalogo').delete().eq('id', item.id);
+      const { error: deleteError } = await supabase
+        .from('catalogo')
+        .delete()
+        .eq('id', item.id);
 
       if (deleteError) {
-        throw deleteError;
+        throw new Error(`Erro ao excluir do banco (catálogo): ${deleteError.message}`);
       }
 
       setCatalogo((prev) => prev.filter((catalogoItem) => catalogoItem.id !== item.id));
+      await fetchCatalogo();
       alert('Item do catálogo excluído com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir item do catálogo:', error);
-      alert('Erro ao excluir item do catálogo.');
+      alert(error.message || 'Erro ao excluir item do catálogo.');
     } finally {
       setDeletingId(null);
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900">Área do cliente</h1>
+              <p className="text-slate-500">Digite a senha para continuar</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Senha</label>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Digite a senha"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            {loginError ? (
+              <p className="text-sm text-red-600 font-medium">{loginError}</p>
+            ) : null}
+
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-xl px-5 py-3 hover:opacity-90 transition"
+            >
+              <Lock className="w-5 h-5" />
+              Entrar
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Painel do cliente</h1>
-          <p className="text-slate-600 mt-2">
-            Adicione e exclua imagens de Obras Realizadas e do Catálogo direto pelo site.
-          </p>
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Painel do cliente</h1>
+            <p className="text-slate-600 mt-2">
+              Adicione e exclua imagens de Obras Realizadas e do Catálogo direto pelo site.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition"
+          >
+            Sair
+          </button>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

@@ -587,7 +587,7 @@ const HomePage = () => {
               <div className="relative">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                   <img
-                    src="https://images.unsplash.com/photo-1582913130063-8318329a94a3"
+                    src="/marmore.png"
                     alt="Detalhe de acabamento em mármore"
                     className="w-full h-full object-cover"
                   />

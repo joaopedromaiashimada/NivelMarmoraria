@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <div>
             <div className="flex items-center gap-2.5">
-              <img src="/logo-nivel.png" alt="Logo Marmoraria Nível" className="h-10 w-auto object-contain shrink-0" />
+              <img src="/logop.png" alt="Logo Marmoraria Nível" className="h-10 w-auto object-contain shrink-0" />
               <span className="heading-font text-[2rem] leading-none font-bold text-white">Marmoraria Nível</span>
             </div>
             <p className="mt-5 text-white leading-relaxed max-w-md">

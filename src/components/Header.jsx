@@ -1,16 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import WhatsAppIcon from '@/components/WhatsAppIcon.jsx';
-import { uploadImage } from '@/uploadImage';
+import { uploadImage } from './uploadimage.js';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [logoUrl, setLogoUrl] = useState(localStorage.getItem('hero_image') || '/logo-nivel.png');
   const fileInputRef = useRef(null);
-  const navigate = useNavigate();
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);

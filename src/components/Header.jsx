@@ -1,14 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import WhatsAppIcon from '@/components/WhatsAppIcon.jsx';
-import { uploadImage } from './uploadimage.js';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
-  const [logoUrl, setLogoUrl] = useState(localStorage.getItem('hero_image') || '/logo-nivel.png');
-  const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
@@ -23,25 +22,15 @@ const Header = () => {
 
     if (nextClicks >= 5) {
       setSecretClicks(0);
-      fileInputRef.current?.click();
+      navigate('/admin-obras'); // 🔥 agora vai pro admin
       return;
     }
 
     setSecretClicks(nextClicks);
-    setTimeout(() => setSecretClicks(0), 1800);
-  };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const url = await uploadImage(file);
-
-    if (url) {
-      localStorage.setItem('hero_image', url);
-      setLogoUrl(url);
-      window.location.reload();
-    }
+    setTimeout(() => {
+      setSecretClicks(0);
+    }, 1800);
   };
 
   const navItems = [
@@ -59,6 +48,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20 gap-4">
+
           <button
             onClick={() => {
               scrollToSection('hero');
@@ -66,7 +56,13 @@ const Header = () => {
             }}
             className="flex items-center gap-2 text-left transition-opacity duration-200 hover:opacity-90 shrink-0"
           >
-<img src="/logo-nivel.png" alt="Logo Marmoraria Nível" className="h-9 sm:h-10 w-auto object-contain" />            <span className="text-xl sm:text-[2rem] font-extrabold text-primary tracking-tight leading-none">
+            <img 
+              src="/logo-nivel.png" 
+              alt="Logo Marmoraria Nível" 
+              className="h-9 sm:h-10 w-auto object-contain" 
+            />
+
+            <span className="text-xl sm:text-[2rem] font-extrabold text-primary tracking-tight leading-none">
               Marmoraria Nível
             </span>
           </button>
@@ -81,6 +77,7 @@ const Header = () => {
                 {item.label}
               </button>
             ))}
+
             <Button
               onClick={() => window.open(whatsappUrl, '_blank')}
               className="bg-primary text-white hover:bg-primary/90 transition-all duration-200 active:scale-[0.98] shadow-md hover:shadow-lg rounded-lg px-6"
@@ -112,6 +109,7 @@ const Header = () => {
                 {item.label}
               </button>
             ))}
+
             <div className="pt-4 px-4">
               <Button
                 onClick={() => window.open(whatsappUrl, '_blank')}
@@ -124,14 +122,6 @@ const Header = () => {
           </nav>
         </div>
       )}
-
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
     </header>
   );
 };

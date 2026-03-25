@@ -26,7 +26,7 @@ const Footer = () => {
               {/* WHATSAPP */}
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white transition-colors duration-200 hover:text-white/80">
                 <WhatsAppIcon className="w-5 h-5" />
-                <span>(19) 99742-1441</span>
+                <span>(19) 974421-4415</span>
               </a>
 
               {/* ENDEREÇO (AGORA CLICÁVEL) */}
